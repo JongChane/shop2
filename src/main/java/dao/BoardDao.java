@@ -6,6 +6,7 @@ import java.util.Map;
 
 import javax.sql.DataSource;
 
+import org.mybatis.spring.SqlSessionTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.RowMapper;
@@ -14,86 +15,62 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.stereotype.Repository;
 
+import dao.mapper.BoardMapper;
 import logic.Board;
 
 @Repository
 public class BoardDao {
-	private NamedParameterJdbcTemplate template;
-	private Map<String,Object> param = new HashMap<>();
-	private RowMapper<Board> mapper = new BeanPropertyRowMapper<>(Board.class);
-
-	
 	@Autowired
-	public void setDataSource(DataSource dataSource) {
-		template = new NamedParameterJdbcTemplate(dataSource);
-	}
+	private SqlSessionTemplate template;
+	private Map<String,Object> param = new HashMap<>();
+	private Class<BoardMapper> cls = BoardMapper.class;
+
 	public int maxNum() {
-		return template.queryForObject
-				("select ifnull(max(num),0) from board",param,Integer.class);
+		return template.getMapper(cls).maxNum();
 	}
 	public void insert(Board board) {
-		SqlParameterSource param = new BeanPropertySqlParameterSource(board);
-		String sql = "insert into board (num,boardid,writer,pass,title,content,file1, regdate,"
-				+ "readcnt,grp,grplevel,grpstep) values (" 
-				+ ":num,:boardid,:writer,:pass,:title,:content,:fileurl, now(),"
-				+ "0,:grp,:grplevel,:grpstep)";
-		template.update(sql,param);
+		template.getMapper(cls).insert(board);
 	}
 	public int count(String boardid, String searchtype, String searchcontent) {
-		String sql = "select count(*) from board where boardid=:boardid";
 		param.clear();
 		param.put("boardid", boardid);
-		if(searchtype != null && searchcontent != null) { //검색 요청
-			sql += " and " +  searchtype + " like :searchcontent";
-			param.put("searchcontent","%"+searchcontent + "%");
-		}
-		return template.queryForObject(sql, param, Integer.class);
+		param.put("searchtype",searchtype);
+		param.put("searchcontent",searchcontent);
+		return template.getMapper(cls).count(param);
 	}
-	private String select = "select num,writer,pass,title,content,file1 fileurl,"
-			+ " regdate, readcnt, grp, grplevel, grpstep, boardid from board";
 	public List<Board> list
 	(Integer pageNum, int limit, String boardid, String searchtype, String searchcontent) {
 		param.clear();
-		String sql = select; 
-		sql +=" where boardid=:boardid ";
-		if(searchtype != null && searchcontent != null) { //검색 요청
-			sql += " and " +  searchtype + " like :searchcontent";
-			param.put("searchcontent","%"+searchcontent + "%");
-		}
-		sql += " order by grp desc, grpstep asc limit :startrow, :limit";
 		param.put("startrow", (pageNum - 1) * limit); //1페이지 : 0, 2페이지 : 10 
 		param.put("limit",  limit);		
 		param.put("boardid",  boardid);		
-		return template.query(sql, param,mapper);
+		param.put("searchtype",searchtype);
+		param.put("searchcontent",searchcontent);
+		return template.getMapper(cls).select(param);
 	}
 	public Board selectOne(Integer num) {
-		String sql = select + " where num = :num";
 		param.clear();
 		param.put("num", num);
-		return template.queryForObject(sql, param, mapper);
+		return template.selectOne("dao.mapper.BoardMapper.select",param);
 	}
 	public void addReadcnt(Integer num) {
 		param.clear();
 		param.put("num", num);
-		String sql = "update board set readcnt = readcnt + 1 " 
-		           + " where num=:num";
-		template.update(sql, param);
+		template.getMapper(cls).addReadcnt(param);
 	}
-	public void updateGrpStep(Board board) {
-		String sql = "update board set grpstep=grpstep + 1" 
-	               + " where grp = :grp and grpstep > :grpstep";
+	public void updateGrpStep(Board board) { //답변글 등록시 기존 게시물의 grpstep값을 +1 변경
 		param.clear();
 		param.put("grp", board.getGrp());         //원글의 grp
 		param.put("grpstep", board.getGrpstep()); //원글의 grpstep
-		template.update(sql, param);
+		template.getMapper(cls).updateGrpStep(param);
 	}
 	public void update(Board board) {
-		String sql = "update board set writer=:writer, title=:title, content=:content,"
-				 + " file1=:fileurl where num=:num";
-		SqlParameterSource param = new BeanPropertySqlParameterSource(board);
-		template.update(sql, param);		
+		template.getMapper(cls).update(board);		
 	}
 	public void delete(Integer num) {
-		template.update("delete from board where num="+num, param);
+		template.getMapper(cls).delete(num);
+	}
+	public List<Map<String, Object>> graph1(String id) {
+		return template.getMapper(cls).graph1(id);
 	}
 }

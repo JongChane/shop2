@@ -7,7 +7,6 @@ import javax.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -67,11 +66,8 @@ public class UserController {
 			return mav;
 		}
 		//1. userid 맞는 User를 db에서 조회하기
-		User dbUser = null;
-		try {
-			dbUser = service.selectUserOne(user.getUserid());
-		} catch(EmptyResultDataAccessException e) {//조회된 데이터가 없는 경우 발생 예외
-			e.printStackTrace();
+		User dbUser = service.selectUserOne(user.getUserid());
+		if (dbUser == null) {//조회된 데이터가 없는 경우
 			bresult.reject("error.login.id"); //아이디를 확인하세요 
 			mav.getModel().putAll(bresult.getModel());
 			return mav;
@@ -271,10 +267,9 @@ public class UserController {
 		 * user.getUserid() == null : 아이디찾기 =>  아이디값 저장
 		 * user.getUserid() != null : 비밀번호찾기 => 비밀번호값 저장
 		 */
-		String result = null;
-		try {
-		   result = service.getSearch(user);
-		} catch (EmptyResultDataAccessException e) {
+		String result =  service.getSearch(user); //mybatis 구현시 해당 레코드가 없는 경우 결과값이 null임
+		                                          //결과값이 없는 경우 예외발생 없음 
+		if(result == null) {
 			bresult.reject(code);
 		    mav.getModel().putAll(bresult.getModel());
 		    return mav;

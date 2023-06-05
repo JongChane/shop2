@@ -19,8 +19,7 @@ public class ItemDao {
 	private final Class<ItemMapper> cls = ItemMapper.class;
 
 	public List<Item> list() {
-		param.clear();
-		return template.getMapper(cls).select(param); //item 테이블의 전체 내용을 Item 객체의 목록 리턴 
+		return template.getMapper(cls).select(null); //item 테이블의 전체 내용을 Item 객체의 목록 리턴 
 	}
 
 	public Item getItem(Integer id) {
@@ -28,7 +27,8 @@ public class ItemDao {
 		param.put("id", id);
 		//item 테이블의 id값의 해당하는 내용을 Item 객체의 목록 리턴. 한건만 필요
 //		return template.getMapper(cls).select(param).get(0);  
-		return template.selectOne("dao.mapper.ItemMapper.select", param);
+		//selectOne() : 리턴되는 데이터의 레코드 갯수가 한개인 경우
+		return template.selectOne("dao.mapper.ItemMapper.select", param); 
 	}
 
 	public int maxId() {

@@ -1,7 +1,9 @@
 package logic;
 
 import java.io.File;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
@@ -176,5 +178,13 @@ public class ShopService {
 	}
 	public void boardDelete(Integer num) {
 		boardDao.delete(num);
+	}
+	//{"홍길동"=10,"김삿갓"=7,.....}
+	public Map<String, Integer> graph1(String id) {  //게시판 종류별, 글작성자별 등록 건수
+		// list : [{writer=홍길동,cnt=10},{writer=김삿갓,cnt=7}...]
+		List<Map<String,Object>> list = boardDao.graph1(id);
+		//list => map 형태로 변경하여 Controller로 리턴
+		Map<String, Integer> map = new HashMap<>();
+		return map;
 	}
 }

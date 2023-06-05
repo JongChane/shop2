@@ -26,10 +26,12 @@
     <property name="initialPoolSize"><value>5</value></property> <!-- 초기 connection 객체의 갯수 -->
     <property name="acquireIncrement"><value>5</value></property> <!-- 증가될 connection 객체의 갯수 -->     
 </bean>
+<!-- Transaction처리를 위한 설정 -->
  <tx:annotation-driven transaction-manager="txManager"/>
  <bean id="txManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
     <property name="dataSource" ref="dataSource" />
  </bean> 
+ 
  <!-- mybatis 관련 설정 -->
  <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
     <property name="dataSource" ref="dataSource" /> <!-- Connection 객체 -->

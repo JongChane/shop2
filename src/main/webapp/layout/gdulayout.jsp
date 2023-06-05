@@ -95,48 +95,27 @@ html,body,h1,h2,h3,h4,h5 {font-family: "Raleway", sans-serif}
 
   <!-- Header -->
   <header class="w3-container" style="padding-top:22px">
-    <h5><b><i class="fa fa-dashboard"></i> My Dashboard</b></h5>
+    <h5><b><i class="fa fa-dashboard"></i>게시판현황</b></h5>
   </header>
-
   <div class="w3-row-padding w3-margin-bottom">
-    <div class="w3-quarter">
-      <div class="w3-container w3-red w3-padding-16">
-        <div class="w3-left"><i class="fa fa-comment w3-xxxlarge"></i></div>
-        <div class="w3-right">
-          <h3>52</h3>
-        </div>
-        <div class="w3-clear"></div>
-        <h4>Messages</h4>
+    <div class="w3-half">
+      <div class="w3-container w3-padding-16 w3-center">
+         <input type="radio" name="pie" onchange="piegraph(2)"
+          checked="checked">자유게시판 &nbsp;&nbsp;
+         <input type="radio" name="pie" onchange="piegraph(3)">QNA &nbsp;&nbsp;
+         <div id="piecontainer" style="width:100%; border:1px solid #ffffff">
+            <canvas id="canvas1" style="width:100%"></canvas>
+         </div>
       </div>
     </div>
-    <div class="w3-quarter">
-      <div class="w3-container w3-blue w3-padding-16">
-        <div class="w3-left"><i class="fa fa-eye w3-xxxlarge"></i></div>
-        <div class="w3-right">
-          <h3>99</h3>
-        </div>
-        <div class="w3-clear"></div>
-        <h4>Views</h4>
-      </div>
-    </div>
-    <div class="w3-quarter">
-      <div class="w3-container w3-teal w3-padding-16">
-        <div class="w3-left"><i class="fa fa-share-alt w3-xxxlarge"></i></div>
-        <div class="w3-right">
-          <h3>23</h3>
-        </div>
-        <div class="w3-clear"></div>
-        <h4>Shares</h4>
-      </div>
-    </div>
-    <div class="w3-quarter">
-      <div class="w3-container w3-orange w3-text-white w3-padding-16">
-        <div class="w3-left"><i class="fa fa-users w3-xxxlarge"></i></div>
-        <div class="w3-right">
-          <h3>50</h3>
-        </div>
-        <div class="w3-clear"></div>
-        <h4>Users</h4>
+    <div class="w3-half">
+      <div class="w3-container w3-padding-16 w3-center">
+         <input type="radio" name="barline" onchange="barlinegraph(2)"
+          checked="checked">자유게시판 &nbsp;&nbsp;
+         <input type="radio" name="barline" onchange="barlinegraph(3)">QNA &nbsp;&nbsp;
+         <div id="barcontainer" style="width:100%; border:1px solid #ffffff">
+            <canvas id="canvas2" style="width:100%"></canvas>
+         </div>
       </div>
     </div>
   </div>
@@ -194,11 +173,14 @@ function w3_close() {
   overlayBg.style.display = "none";
 }
 </script>
+<script type="text/javascript" 
+       src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.min.js"></script>
 <script type="text/javascript">
    $(function(){
 	   getSido()   //sido.txt 파일을 읽어서 시도 정보 조회
 //	   exchangeRate() //수출입은행 환율 정보 조회
 	   exchangeRate2() //수출입은행 환율 정보 조회. 서버에서 배열로 전송받아서 화면 출력하기
+	   piegraph(2)
    })
    
    function getSido() {  //서버에서 리스트객체를 배열로 직접 전달 받음
@@ -314,6 +296,61 @@ function exchangeRate2() {
 			   alert("환율 조회시 서버 오류 발생 :" + e.status)
 		   }
 	   })
+}
+let randomColorFactor = function(){
+	return Math.round(Math.random() * 255) //0~255사이의 임의의 수 
+}
+let randomColor = function(opa) {
+	return "rgba(" + randomColorFactor() + ","
+	               + randomColorFactor() + ","
+	               + randomColorFactor() + ","
+	               + (opa || '.3') + ")"
+}
+function piegraph(id) { //2
+     $.ajax("${path}/ajax/graph1?id="+id,{
+    	 success : function(json) {
+    		 let canvas = "<canvas id='canvas1' style='width:100%'></canvas>"
+    		 $("#piecontainer").html(canvas)
+    		 pieGraphPrint(json,id)
+    	 },
+    	 error : function(e) {
+    		 alert("서버오류:" +e.status)
+    	 }
+     })	
+}
+//json : 서버에서 전송해준 데이터값.
+//json : [{"홍길동":10},{"김삿갓":7},....]
+function pieGraphPrint(arr,id) {
+	let colors = []  //임의의 색상 지정
+	let writers = []
+	let datas = []
+	$.each(arr,function(index){
+		colors[index] = randomColor(0.5)
+		for(key in arr[index]) {
+			writers.push(key) //글쓴이
+			datas.push(arr[index][key]) //글작성건수
+		}
+	})
+	let title = (id == 2)?"자유게시판":"QNA"
+	let config = {
+			type : 'pie',   //그래프 종류
+			data : {        //데이터 정보
+				datasets : [{ data:datas,
+					          backgroundColor : colors}],
+			    labels : writers
+			},
+			options : {
+				responsive : true,
+				legend : {display:true, position:"right"},
+			    title : {
+			    	display : true,
+			    	text : '글쓴이 별 ' + title + " 등록건수",
+			    	position : 'bottom'
+			    }
+			}
+	}
+	let ctx = document.getElementById("canvas1")
+	new Chart(ctx,config)
 }
 </script>
 </body>

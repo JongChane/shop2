@@ -14,11 +14,15 @@
 <servlet>
    <servlet-name>shop</servlet-name>
    <servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
-   <init-param><!-- xml 의 위치 지정 -->
+   <init-param>
+     <param-name>contextClass</param-name> <!-- 자바 설정 파일 사용 -->
+<param-value>org.springframework.web.context.support.AnnotationConfigWebApplicationContext</param-value>
+   </init-param>
+   <init-param><!-- 자바환경설정파일의 클래스 이름 지정 -->
      <param-name>contextConfigLocation</param-name>
-     <param-value>
-        classpath:spring-mvc.xml
-        classpath:spring-db.xml
+     <param-value>config.MvcConfig
+                  config.DBConfig
+                  config.WebSocketConfig
      </param-value>
    </init-param>
    <load-on-startup>1</load-on-startup>

@@ -40,7 +40,7 @@ public class MvcConfig implements WebMvcConfigurer{
 		vr.setSuffix(".jsp");
 		return vr;
 	}
-	//messages.properties 파일의 코등값으로 message 처리
+	//messages.properties 파일의 코딩값으로 message 처리
 	@Bean
 	public MessageSource messageSource() {
 		ResourceBundleMessageSource ms = new ResourceBundleMessageSource();
@@ -73,7 +73,7 @@ public class MvcConfig implements WebMvcConfigurer{
 		registry.addInterceptor(new BoardInterceptor())
 		.addPathPatterns("/board/write")
 		.addPathPatterns("/board/update")
-		.addPathPatterns("/board/delete");		
+		.addPathPatterns("/board/delete");
 	}
 	//기본 웹파일 처리를 위한 설정
 	@Override

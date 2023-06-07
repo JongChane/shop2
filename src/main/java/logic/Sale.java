@@ -4,6 +4,14 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import org.springframework.web.multipart.MultipartFile;
+
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+@Setter
+@Getter
+@ToString
 public class Sale {	
 	private int saleid;
 	private String userid;
@@ -22,40 +30,4 @@ public class Sale {
 		return itemList.stream()
 			 .mapToInt(s->s.getItem().getPrice() * s.getQuantity()).sum(); 
 	}
-	//setter, getter, toString
-	public int getSaleid() {
-		return saleid;
-	}
-	public void setSaleid(int saleid) {
-		this.saleid = saleid;
-	}
-	public String getUserid() {
-		return userid;
-	}
-	public void setUserid(String userid) {
-		this.userid = userid;
-	}
-	public Date getSaledate() {
-		return saledate;
-	}
-	public void setSaledate(Date saledate) {
-		this.saledate = saledate;
-	}
-	public User getUser() {
-		return user;
-	}
-	public void setUser(User user) {
-		this.user = user;
-	}
-	public List<SaleItem> getItemList() {
-		return itemList;
-	}
-	public void setItemList(List<SaleItem> itemList) {
-		this.itemList = itemList;
-	}
-	@Override
-	public String toString() {
-		return "Sale [saleid=" + saleid + ", userid=" + userid + ", saledate=" + saledate + ", user=" + user + "]";
-	}
-	
 }

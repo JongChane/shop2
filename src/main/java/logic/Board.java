@@ -6,6 +6,32 @@ import javax.validation.constraints.NotEmpty;
 
 import org.springframework.web.multipart.MultipartFile;
 
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+/*
+ * lombok : setter, getter, toString, 생성자등을 자동 생성해주는 유틸리티.
+ * lombok 사용
+ * 		- lombok 설치 https://projectlombok.org/ -> download -> lombok.jar 파일 다운받기
+ * 				cmd 창 열기 => lombok.jar 파일의 폴더로 이동
+ * 				java -jar lombok.jar 실행
+ * 				eclipse.exe 선택 후 install하기
+ * 		- lombok 관련 jar
+ * 				pom.xml에 설정
+ * 
+ * lombok에서 사용하는 어노테이션 설명
+ * @Setter : 자동으로 setter(setXxx()) 소스 생성
+ * @Getter : 자동으로 getter(getXxx()) 소스 생성
+ * @ToString : 자동으로 모든 멤버를 출력하도록 toString 메서스 소스생성
+ * @EqualsAndHashCode : equals 함수와 hashCode 함수를 자동 오버라이딩
+ * @Data : Getter, Setter, ToString, EqualsAndHashCode
+ * @AllArgsConstructor : 모든 멤버를 매개변수로 가진 생성자 구현
+ * @NoArgsConstructor : 매개변수 없는 생성자 구현
+ * @RequiredArgsConstructor :final, @NotNull인 멤버변수만 매개변수로 갖는 생성자 구현
+ */
+@Setter
+@Getter
+@ToString
 public class Board {
 	private int num;
 	private String boardid;
@@ -25,99 +51,4 @@ public class Board {
 	private int grplevel;
 	private int grpstep;
 	private int commcnt;
-	//setter, getter, toString
-	public int getNum() {
-		return num;
-	}
-	public void setNum(int num) {
-		this.num = num;
-	}
-	public String getBoardid() {
-		return boardid;
-	}
-	public void setBoardid(String boardid) {
-		this.boardid = boardid;
-	}
-	public String getWriter() {
-		return writer;
-	}
-	public void setWriter(String writer) {
-		this.writer = writer;
-	}
-	public String getPass() {
-		return pass;
-	}
-	public void setPass(String pass) {
-		this.pass = pass;
-	}
-	public String getContent() {
-		return content;
-	}
-	public void setContent(String content) {
-		this.content = content;
-	}
-	public MultipartFile getFile1() {
-		return file1;
-	}
-	public void setFile1(MultipartFile file1) {
-		this.file1 = file1;
-	}
-	public String getFileurl() {
-		return fileurl;
-	}
-	public void setFileurl(String fileurl) {
-		this.fileurl = fileurl;
-	}
-	public Date getRegdate() {
-		return regdate;
-	}
-	public void setRegdate(Date regdate) {
-		this.regdate = regdate;
-	}
-	public int getReadcnt() {
-		return readcnt;
-	}
-	public void setReadcnt(int readcnt) {
-		this.readcnt = readcnt;
-	}
-	public int getGrp() {
-		return grp;
-	}
-	public void setGrp(int grp) {
-		this.grp = grp;
-	}
-	public int getGrplevel() {
-		return grplevel;
-	}
-	public void setGrplevel(int grplevel) {
-		this.grplevel = grplevel;
-	}
-	public int getGrpstep() {
-		return grpstep;
-	}
-	public void setGrpstep(int grpstep) {
-		this.grpstep = grpstep;
-	}
-	
-	public String getTitle() {
-		return title;
-	}
-	public void setTitle(String title) {
-		this.title = title;
-	}
-	public int getCommcnt() {
-		return commcnt;
-	}
-	public void setCommcnt(int commcnt) {
-		this.commcnt = commcnt;
-	}
-	@Override
-	public String toString() {
-		return "Board [num=" + num + ", boardid=" + boardid + ", writer=" + writer + ", pass=" + pass + ", title="
-				+ title + ", content=" + content + ", file1=" + file1 + ", fileurl=" + fileurl + ", regdate=" + regdate
-				+ ", readcnt=" + readcnt + ", grp=" + grp + ", grplevel=" + grplevel + ", grpstep=" + grpstep
-				+ ", commcnt=" + commcnt + "]";
-	}
-	
-
 }

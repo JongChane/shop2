@@ -11,14 +11,14 @@ import org.apache.ibatis.annotations.Update;
 import logic.User;
 
 public interface UserMapper {
-	@Insert("insert into useraccount (userid,username,password,"
+	@Insert("insert into usersecurity (userid,channel,username,password,"
 			+ " birthday,phoneno,postcode,address,email) values " 
-			+ " (#{userid},#{username},#{password},"
+			+ " (#{userid},#{channel},#{username},#{password},"
 			+ " #{birthday},#{phoneno},#{postcode},#{address},#{email})")
 	void insert(User user);
 	
 	@Select({"<script>",
-		  "select * from useraccount ",
+		  "select * from usersecurity ",
 		  "<if test='userid != null'> where userid=#{userid}</if>",
 		  "<if test='userids != null'> where userid in "
 		  + "<foreach collection='userids' item='id' separator=',' open='(' close=')'>#{id}"
@@ -26,20 +26,23 @@ public interface UserMapper {
 		  "</script>"})
 	List<User> select(Map<String,Object> param);
 
-	@Update("update useraccount set username=#{username},"
+	@Update("update usersecurity set username=#{username},"
 			+ "birthday=#{birthday},phoneno=#{phoneno},postcode=#{postcode},"
 			+ "address=#{address}, email=#{email} where userid=#{userid}")
 	void update(User user);
 
-	@Delete("delete from useraccount where userid=#{userid}")
+	@Delete("delete from usersecurity where userid=#{userid}")
 	void delete(Map<String, Object> param);
 
-	@Update("update useraccount set password=#{password} where userid=#{userid}")
+	@Update("update usersecurity set password=#{password} where userid=#{userid}")
 	void chgpass(Map<String, Object> param);
 
 	@Select({"<script>",
-		"select ${col} from useraccount where email=#{email} and phoneno=#{phoneno} "
+		"select ${col} from usersecurity where email=#{email} and phoneno=#{phoneno} "
 		+ "<if test='userid != null'> and userid=#{userid}</if>",
 		"</script>"})
 	String search(Map<String, Object> param);
+	
+	@Select("select * from usersecurity where phoneno=#{value}")
+	List<User> getUserlist(String phoneno);
 }

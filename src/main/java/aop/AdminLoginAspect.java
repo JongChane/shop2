@@ -11,7 +11,7 @@ import exception.LoginException;
 import logic.User;
 
 @Component
-@Aspect
+//@Aspect
 public class AdminLoginAspect {
 	@Around("execution(* controller.AdminController.*(..)) && args(..,session)")
 	public Object adminCheck(ProceedingJoinPoint joinPoint, HttpSession session) 

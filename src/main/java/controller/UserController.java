@@ -1,39 +1,231 @@
 package controller;
 
-import java.util.List;
-
-import javax.servlet.http.HttpSession;
-import javax.validation.Valid;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.stereotype.Controller;
-import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.servlet.ModelAndView;
-
-import exception.LoginException;
-import logic.Sale;
-import logic.ShopService;
-import logic.User;
+	import java.io.BufferedReader;
+	import java.io.InputStreamReader;
+	import java.io.UnsupportedEncodingException;
+	import java.math.BigInteger;
+	import java.net.HttpURLConnection;
+	import java.net.URL;
+	import java.net.URLEncoder;
+	import java.security.MessageDigest;
+	import java.security.NoSuchAlgorithmException;
+	import java.security.SecureRandom;
+	import java.util.List;
+	
+	import javax.servlet.http.HttpSession;
+	import javax.validation.Valid;
+	
+	import org.json.simple.JSONObject;
+	import org.json.simple.parser.JSONParser;
+	import org.json.simple.parser.ParseException;
+	import org.springframework.beans.factory.annotation.Autowired;
+	import org.springframework.dao.DataIntegrityViolationException;
+	import org.springframework.stereotype.Controller;
+	import org.springframework.validation.BindingResult;
+	import org.springframework.web.bind.annotation.GetMapping;
+	import org.springframework.web.bind.annotation.PathVariable;
+	import org.springframework.web.bind.annotation.PostMapping;
+	import org.springframework.web.bind.annotation.RequestMapping;
+	import org.springframework.web.servlet.ModelAndView;
+	
+	import exception.LoginException;
+	import logic.Sale;
+	import logic.ShopService;
+	import logic.User;
+	import util.CipherUtil;
 
 @Controller
 @RequestMapping("user")
 public class UserController {
 	@Autowired 
 	private ShopService service;
-	
+	@Autowired
+	private CipherUtil util;
+	//======================================== private 메서드	
+	private String emailEncrypt(String email, String userid){
+		String plain1 = email;
+		String key;
+		try {
+			key = util.makehash(userid,"SHA-256");
+			String cipherEmail = util.encrypt(plain1,key);
+			return cipherEmail;
+		} catch (NoSuchAlgorithmException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+	private String passwordHash(String password){
+		MessageDigest md;
+		try {
+			md = MessageDigest.getInstance("SHA-512");
+			String hashpass = "";
+			byte[] plain = password.getBytes();
+			byte[] hash = md.digest(plain);
+			for(byte b : hash) hashpass += String.format("%02X", b);
+			return hashpass;
+		} catch (NoSuchAlgorithmException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+	private String emailDecrypt(User user) {
+		try {
+			String key = util.makehash(user.getUserid(), "SHA-256");
+			String email = util.decrypt(user.getEmail(), key);
+			return email;
+		} catch(Exception e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+//================================== private 메서드
 	@GetMapping("*")  //설정되지 않은 모든 요청시 호출되는 메서드
 	public ModelAndView join() {
 		ModelAndView mav = new ModelAndView();
 		mav.addObject(new User());
 		return mav;
 	}
-	@PostMapping("join")
-	public ModelAndView userAdd(@Valid User user, BindingResult bresult) {
+	@GetMapping("login")  //설정되지 않은 모든 요청시 호출되는 메서드
+	public ModelAndView loginForm(HttpSession session) {
+		ModelAndView mav = new ModelAndView();
+		String clientId = "eweYI68MnHRpSDBwQL5V";
+		String redirectURL = "null";
+		try {
+			redirectURL = URLEncoder.encode("http://localhost:8080/shop2/user/naverlogin","UTF-8");
+		} catch(UnsupportedEncodingException e) {
+			e.printStackTrace();
+		}
+		SecureRandom random = new SecureRandom();
+		String state = new BigInteger(130,random).toString();
+		String apiURL = "https://nid.naver.com/oauth2.0/authorize?response_type=code";
+		apiURL += "&client_id=" + clientId;
+		apiURL += "&redirect_uri=" + redirectURL;
+		apiURL += "&state=" + state; //임의의 수
+		mav.addObject(new User());
+		mav.addObject("apiURL",apiURL);
+		mav.addObject(new User());
+		session.getServletContext().setAttribute("session", session);
+		System.out.println("1.session.id="+session.getId());
+		return mav;
+	}
+
+	   @RequestMapping("naverlogin")
+	   public String naverlogin(String code, String state, HttpSession session) throws NoSuchAlgorithmException {
+	      System.out.println("2.session.id="+ session.getId());
+	      String clientId = "eweYI68MnHRpSDBwQL5V";
+		  String clientSecret = "x9LUbbp1SM";
+	      //      String code = request.getParameter("code");
+	      //      String state = request.getParameter("state");
+	      String redirectURI = null;
+	      try {
+	         redirectURI = URLEncoder.encode("YOUR_CALLBACK_URL", "UTF-8");
+	      } catch (UnsupportedEncodingException e) {
+	         e.printStackTrace();
+	      }
+	      String apiURL;
+	      apiURL = "https://nid.naver.com/oauth2.0/token?grant_type=authorization_code&";
+	      apiURL += "client_id=" + clientId;
+	      apiURL += "&client_secret=" + clientSecret;
+	      apiURL += "&redirect_uri=" + redirectURI;
+	      apiURL += "&code=" + code; //네이버에서 전달해준 파라미터값
+	      apiURL += "&state=" + state; //네이버에서 전달해준 파라미터값. 초기에는 로그인 시작시 개발자가 전달한 임의의 수
+	      System.out.println("code="+code+",state="+state);
+	      String access_token = "";
+	      String refresh_token = "";
+	      StringBuffer res = new StringBuffer();
+	      System.out.println("apiURL="+apiURL);
+	      try{
+	         URL url = new URL(apiURL);
+
+	         //네이버에 접속 => 토큰 전달
+	         HttpURLConnection con = (HttpURLConnection)url.openConnection();
+	         con.setRequestMethod("GET");
+	         int responseCode = con.getResponseCode();
+	         BufferedReader br;
+	         System.out.println("responseCode="+responseCode);
+	         if(responseCode==200) {
+	            br = new BufferedReader(new InputStreamReader(con.getInputStream()));
+	         } else {
+	            br = new BufferedReader(new InputStreamReader(con.getErrorStream()));
+	         }
+	         String inputLine;
+	         while ((inputLine = br.readLine()) != null) {
+	            res.append(inputLine);
+	         }
+	         br.close();
+	         if(responseCode==200) {
+	            System.out.println("\n===========res 1:");
+	            //res : JSON 형태의 문자열
+	            //"access_token":"AAAANxXP7ZBFiJKhROALBRzfLaqpALLvmOvz5Ps9ftExUBAEARf5BhdD5H9vcmfHF_wcmFRMaAaSy4fWmM4clk80bV8"
+
+	            System.out.println("res:" + res.toString());
+	         }
+	      } catch(Exception e) {
+	         System.out.println(e);
+	      }
+	      //JSON 형태의 문자열 데이터 => JSON 객체로 변경하기 위한 객체 생성
+	      JSONParser parser = new JSONParser(); //json-simple-1.1.1.jar 파일 설정 필요
+	      JSONObject json = null;
+	      try {
+	         json = (JSONObject)parser.parse(res.toString());
+	      } catch (ParseException e) {
+	         e.printStackTrace();
+	      }//네이버 응답데이터를 json 객체로 생성.
+	      String token = (String)json.get("access_token"); //정상적인 로그인 요청인 경우 네이버가 발생한 코드값
+	      String header = "Bearer " + token; //Bearer 다음에 공백 추가
+	      try {
+	         apiURL = "https://openapi.naver.com/v1/nid/me"; //2번째 요청 url 토큰값 전송
+	         URL url = new URL(apiURL);
+	         HttpURLConnection con = (HttpURLConnection)url.openConnection();
+	         con.setRequestMethod("GET");
+	         con.setRequestProperty("Authorization",header); //인증 정보
+	         int responseCode = con.getResponseCode();
+	         BufferedReader br;
+	         res = new StringBuffer();
+	         if(responseCode==200) {
+	            System.out.println("로그인 정보 정상 수신");
+	            br = new BufferedReader(new InputStreamReader(con.getInputStream()));
+	         } else {
+	            System.out.println("로그인 정보 오류 수신");
+	            br = new BufferedReader(new InputStreamReader(con.getErrorStream()));
+	         }
+	         String inputLine;
+	         while((inputLine = br.readLine()) != null) {
+	            res.append(inputLine);
+	         }
+	         br.close();
+	         System.out.println(res.toString());
+	      } catch(Exception e) {
+	         e.printStackTrace();
+	      }
+	      try {
+	         json = (JSONObject)parser.parse(res.toString());
+	      } catch (ParseException e) {
+	         e.printStackTrace();
+	      } 
+	      System.out.println(json); //네이버 사용자의 정보 수신
+	      JSONObject jsondetail = (JSONObject)json.get("response");
+	      System.out.println(jsondetail.get("id"));
+	      System.out.println(jsondetail.get("email"));
+	      System.out.println(jsondetail.get("name"));
+	      
+	      String userid = jsondetail.get("id").toString();
+	      User user = service.selectUserOne(userid);
+	      if(user == null) {
+	         user = new User();
+	         user.setUserid(userid);
+	         user.setUsername(jsondetail.get("name").toString());
+	         String email = jsondetail.get("email").toString();
+	         user.setEmail(this.emailEncrypt(email, userid));
+	         user.setChannel("naver");
+	         service.userInsert(user);
+	      }
+	      session.setAttribute("loginUser", user);
+	      return "redirect:mypage?userid="+user.getUserid();
+	   }
+	
+	@PostMapping("join") ///회원가입
+	public ModelAndView userAdd(@Valid User user, BindingResult bresult) throws NoSuchAlgorithmException {
 		ModelAndView mav = new ModelAndView();
 		if(bresult.hasErrors()) {
 			mav.getModel().putAll(bresult.getModel());
@@ -42,8 +234,14 @@ public class UserController {
 			bresult.reject("error.input.check");
 			return mav;
 		}
-		//정상 입력값 : 회원 가입 하기 => db의 useraccount 테이블에 저장
+		//정상 입력값 : 회원 가입 하기 => db의 usersecurity 테이블에 저장
 		try {
+			/*
+			 * password : SHA-512 해쉬값 변경
+			 * email 	: AES 알고리즘으로 암호화
+			 */
+			user.setPassword(passwordHash(user.getPassword()));
+			user.setEmail(emailEncrypt(user.getEmail(),user.getUserid()));
 			service.userInsert(user);
 			mav.addObject("user",user);
 		}catch(DataIntegrityViolationException e) {
@@ -56,9 +254,10 @@ public class UserController {
 		mav.setViewName("redirect:login");
 		return mav;
 	}
+
 	@PostMapping("login")
 	public ModelAndView login
-	(@Valid User user, BindingResult bresult,HttpSession session) {
+	(@Valid User user, BindingResult bresult,HttpSession session) throws NoSuchAlgorithmException {
 		ModelAndView mav = new ModelAndView();
 		if(bresult.hasErrors()) {
 			mav.getModel().putAll(bresult.getModel());
@@ -75,7 +274,9 @@ public class UserController {
 		//2. 비밀번호 검증  
 		//   일치 : session.setAttribute("loginUser",dbUser) => 로그인 정보
 		//   불일치 : 비밀번호를 확인하세요. 출력 (error.login.password)
+		//	 입력받은 비밀번호 데이터를 SHA-512값으로 변경해서 비교해야함.
 		//3. mypage로 페이지 이동 => 404 오류 발생 (임시)
+		user.setPassword(passwordHash(user.getPassword()));
 		if(user.getPassword().equals(dbUser.getPassword())) { //정상 로그인
 			session.setAttribute("loginUser", dbUser);
 			mav.setViewName("redirect:mypage?userid="+user.getUserid());
@@ -100,10 +301,13 @@ public class UserController {
 		ModelAndView mav = new ModelAndView();
 		User user = service.selectUserOne(userid);
 		List<Sale> salelist = service.salelist(userid);
+		user.setEmail(emailDecrypt(user)); //이메일 복호화
 		mav.addObject("user", user); //회원정보데이터
 		mav.addObject("salelist", salelist);  //주문목록
 		return mav;
 	}	
+
+
 	//로그아웃 컨트롤러 구현하기.
 	//로그아웃 후 login 페이지로 이동
 	@RequestMapping("logout")
@@ -116,12 +320,13 @@ public class UserController {
 	public ModelAndView idCheckUser(String userid,HttpSession session) {
 		ModelAndView mav = new ModelAndView();
 		User user = service.selectUserOne(userid);
+		user.setEmail(emailDecrypt(user)); //이메일 복호화
 		mav.addObject("user",user);
 		return mav;
 	}
 	@PostMapping("update")
 	public ModelAndView idCheckUpdate(@Valid User user,BindingResult bresult,
-			String userid,HttpSession session) {
+			String userid,HttpSession session){
 		ModelAndView mav = new ModelAndView();
 		//입력값 검증
 		if(bresult.hasErrors()) {
@@ -131,13 +336,14 @@ public class UserController {
 		}
 		//비밀번호 검증
 		User loginUser = (User)session.getAttribute("loginUser");
-		if(!loginUser.getPassword().equals(user.getPassword())) {
+		if(!loginUser.getPassword().equals(this.passwordHash(user.getPassword()))) {
 			mav.getModel().putAll(bresult.getModel());
 			bresult.reject("error.login.password");
 			return mav;
 		}
 		//비밀번호 일치 => 데이터 수정
 		try {
+			user.setEmail(this.emailEncrypt(user.getEmail(), user.getUserid()));
 			service.userUpdate(user);
 			if(loginUser.getUserid().equals(user.getUserid()))
 			   session.setAttribute("loginUser", user);
@@ -177,7 +383,7 @@ public class UserController {
 		User loginUser = (User)session.getAttribute("loginUser");
 		//password : 입력된 비밀번호
 		//loginUser.getPassword() : 로그인 사용자의 비밀번호
-		if(!password.equals(loginUser.getPassword())) {
+		if(!this.passwordHash(password).equals(loginUser.getPassword())) {
 			throw new LoginException
 			     ("비밀번호를 확인하세요.", "delete?userid="+userid);
 		}
@@ -218,10 +424,11 @@ public class UserController {
 		User loginUser = (User)session.getAttribute("loginUser");
 		//password : 현재비밀번호
 		//loginUser.getPassword() : 로그인된 비밀번호
-		if(!password.equals(loginUser.getPassword())) {
+		if(!this.passwordHash(password).equals(loginUser.getPassword())) {
 		  throw new LoginException("비밀번호 오류 입니다.","password");
 		}
 		try {
+			chgpass = this.passwordHash(chgpass);
 			service.userChgpass(loginUser.getUserid(),chgpass);
 			loginUser.setPassword(chgpass); //로그인 정보에 비밀번호 수정
 		} catch(Exception e) {
@@ -240,7 +447,7 @@ public class UserController {
 		String code = "error.userid.search";
 		String title = "아이디";
 		if(url.equals("pw")) { //비밀번호 검증인 경우
-			title = "비밀번호";
+			title = "비밀번호 초기화";
 			code = "error.password.search";
 			if(user.getUserid() == null || user.getUserid().trim().equals("")) {
 				//BindingResult.reject() : global error 
@@ -261,15 +468,44 @@ public class UserController {
 			return mav;
 		}
 		//입력검증 정상완료.
+
 		if(user.getUserid() != null && user.getUserid().trim().equals(""))
-			user.setUserid(null);
+			user.setUserid(null);		
 		/*                                         result
 		 * user.getUserid() == null : 아이디찾기 =>  아이디값 저장
 		 * user.getUserid() != null : 비밀번호찾기 => 비밀번호값 저장
-		 */
-		String result =  service.getSearch(user); //mybatis 구현시 해당 레코드가 없는 경우 결과값이 null임
-		                                          //결과값이 없는 경우 예외발생 없음 
-		if(result == null) {
+		 */	
+		
+		String result = null;   
+		if(user.getUserid() == null) { //아이디 찾기
+			List<User> list = service.getUserlist(user.getPhoneno());
+			System.out.println(list);
+			for(User u : list) {
+				System.out.println("email:"+this.emailDecrypt(u));
+				u.setEmail(this.emailDecrypt(u)); //복호화된 이메일로 저장 => 입력된 이메일과 비교
+				//u.getEmail() 	  : db에 저장된 이메일을 복호화한 데이터
+				//user.getEmail() : 입력된 이메일 데이터
+				if(u.getEmail().equals(user.getEmail())) { //검색 성공
+					result = u.getUserid();
+				}
+			}
+		} else { //비밀번호 찾기(초기화)
+			user.setEmail(this.emailEncrypt(user.getEmail(), user.getUserid()));
+			result = service.getSearch(user); //mybatis 구현시 해당 레코드가 없는 경우 결과값이 null일											  //결과값이 없는 경우 예외발생 없음			
+			if(result != null) { //비밀번호 검색 성공
+				String pass = null;
+				try {
+					pass = util.makehash(user.getUserid(), "SHA-512");
+				} catch (NoSuchAlgorithmException e) {
+					e.printStackTrace();
+				}
+				//pass : 아이디의 SHA-512로 계산한 해쉬값
+				int index = (int) (Math.random()*(pass.length()-10)); //비밀번호 해쉬값의 일부분 랜덤으로 설정
+				result = pass.substring(index, index+6); //pass값의 임의의 위치에서 6자리 값 랜덤 선택
+				service.userChgpass(user.getUserid(), passwordHash(result));
+			}
+		}
+		if(result == null) { //검색실패
 			bresult.reject(code);
 		    mav.getModel().putAll(bresult.getModel());
 		    return mav;

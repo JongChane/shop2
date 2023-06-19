@@ -17,6 +17,7 @@ import org.springframework.stereotype.Repository;
 
 import dao.mapper.BoardMapper;
 import logic.Board;
+import logic.Comment;
 
 @Repository
 public class BoardDao {
@@ -76,4 +77,5 @@ public class BoardDao {
 	public List<Map<String, Object>> graph2(String id) {
 		return template.getMapper(cls).graph2(id);
 	}
+		
 }

@@ -23,6 +23,7 @@ import org.springframework.web.servlet.ModelAndView;
 import exception.BoardException;
 import exception.LoginException;
 import logic.Board;
+import logic.Comment;
 import logic.ShopService;
 
 @Controller
@@ -134,8 +135,40 @@ public class BoardController {
 			mav.addObject("boardName","자유게시판");
 		else if(board.getBoardid().equals("3"))
 			mav.addObject("boardName","QNA");
+		List<Comment> commlist = service.commlist(num);
+		mav.addObject("commlist",commlist);
+		//유효성 검증에 필요한 Comment 객체
+		Comment comm = new Comment();
+		comm.setNum(num);
+		mav.addObject(comm);
 		return mav;
 	}
+	@PostMapping("comment")
+	public ModelAndView comment(@Valid Comment com, BindingResult bresult) {
+		ModelAndView mav = new ModelAndView("board/detail");
+		if(bresult.hasErrors()) {
+			mav.getModel().putAll(bresult.getModel());
+			return mav;
+		}
+		int seq = service.maxseq(com.getNum());
+		com.setSeq(++seq);
+		service.insertComment(com);
+		mav.setViewName("redirect:detail?num="+com.getNum()+"#comment");
+		return mav;
+	}
+	@RequestMapping("commdel")
+	public String commdel(int num, int seq, String pass) {
+		//현재 댓글을 아무나 삭제 가능 -> 수정 필요.
+		// 업무요건1 : 로그인한 회원만 댓글 가능 -> 내글만 삭제 가능
+		// 업무요건2 : 로그아웃상태에서도 댓글 가능 -> db에 비밀번호 추가. 비밀번호 검증
+		Comment dbpass = service.selectPass(num, seq);
+			if(!dbpass.getPass().equals(pass)) {
+				throw new BoardException("비밀번호가 틀립니다.","detail?num="+num+"#comment");
+			}	
+		service.deleteComment(num, seq);
+		return "redirect:detail?num="+num+"#comment";
+	} 
+	
 	@GetMapping({"reply","update","delete"})
 	public ModelAndView getBoard(Integer num,HttpSession session) {
 		ModelAndView mav = new ModelAndView();

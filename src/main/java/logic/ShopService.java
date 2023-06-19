@@ -15,6 +15,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import dao.BoardDao;
+import dao.CommentDao;
+import dao.ExchangeDao;
 import dao.ItemDao;
 import dao.SaleDao;
 import dao.SaleItemDao;
@@ -31,7 +33,10 @@ public class ShopService {
 	private SaleItemDao saleItemDao;
 	@Autowired 
 	private BoardDao boardDao;
-
+	@Autowired
+	private CommentDao commentDao;
+	@Autowired
+	private ExchangeDao exchangeDao;
 	public List<Item> itemList() {
 		return itemDao.list();
 	}
@@ -206,4 +211,45 @@ public class ShopService {
 		}
 		return map;
 	}
+	public List<User> getUserlist(String phoneno) {
+		return userDao.getUserlist(phoneno);
+	}
+	
+	public int maxseq(int num) {
+		return commentDao.maxseq(num);
+	}
+	public void insertComment(Comment com) {
+		commentDao.insertComment(com);
+		
+	}
+	public List<Comment> commlist(Integer num) {
+		return commentDao.commlist(num);
+	}
+	public void deleteComment(int num, int seq) {
+		commentDao.delete(num, seq);
+	}
+	public Comment selectPass(int num, int seq) {
+		return commentDao.selectPass(num, seq);
+	}
+	public synchronized void addExcahnge(List<List<String>> trlist, String exdate) {
+	    String exdate1 = exdate.replace("조회기준일 :", "").trim();
+	    for (List<String> row : trlist) {
+	        String code = row.get(0);
+	        String name = row.get(1);
+	        float primeamt = Float.parseFloat(row.get(2).replace(",", ""));
+	        float sellamt = Float.parseFloat(row.get(3).replace(",", ""));
+	        float buyamt = Float.parseFloat(row.get(4).replace(",", ""));	        
+	        // Create Exchange object and set its properties
+	        Exchange exchange = new Exchange();
+	        exchange.setCode(code);
+	        exchange.setName(name);
+	        exchange.setPrimeamt(primeamt);
+	        exchange.setSellamt(sellamt);
+	        exchange.setBuyamt(buyamt);
+	        exchange.setEdate(exdate1);
+	       
+	        exchangeDao.insert(exchange);   
+	    }
+	}
+
 }
